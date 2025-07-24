@@ -1,8 +1,7 @@
 import {Contract, ethers, JsonRpcProvider, NonceManager} from "ethers";
-
-import {ADDR, PRIVATE_KEY, RPC_URL} from "../config";
+import {ADDR, DEFAULT_RPC_URL, PRIVATE_KEY, RPC_URL} from "../config";
 import {loadAbi} from "../helpers/Loaders";
-import {TokenMeta} from "../types/metadata";
+import {TokenMeta} from "../types/Metadata";
 import {
     AtomicRequestWrite,
     encodeAtomicRequest,
@@ -12,12 +11,8 @@ import {
     toUint88,
     toUint96,
     validateSolveArgs
-} from "../types/atomicQueue";
+} from "../types/AtomicQueue";
 import {withImpersonatedSigner} from "../helpers/Impersonate";
-import {Address, } from "../types/common";
-
-const UINT88_MAX = (1n << 88n) - 1n;
-const clampUint88 = (x: bigint) => (x > UINT88_MAX ? UINT88_MAX : x);
 
 export class VaultService {
     private provider: JsonRpcProvider;
@@ -124,12 +119,11 @@ export class VaultService {
             autoApproveWant?: boolean;
         } = {}
     ): Promise<void> {
-        const {topUpEthWeiHex = "0xDE0B6B3A7640000", autoApproveWant = true,} = opts;
+        const {topUpEthWeiHex = "0x0", autoApproveWant = true,} = opts;
 
         validateSolveArgs(args);
 
-        const net = await this.provider.getNetwork();
-        if (RPC_URL != "http://127.0.0.1:8545") {
+        if (RPC_URL != DEFAULT_RPC_URL) {
             throw new Error("solveOnForkViaQueue must not be called on mainnet");
         }
 
@@ -145,13 +139,14 @@ export class VaultService {
         }
 
         await withImpersonatedSigner(this.provider, solver, async (solverSigner) => {
-        //     if (autoApproveWant) {
-        //         const wantErc20 = new Contract(want, loadAbi("ERC20"), solverSigner);
-        //         const allowance = await wantErc20.allowance(solver, ADDR.ATOMIC_QUEUE);
-        //         if (allowance < offerAmount) {
-        //             await (await wantErc20.approve(ADDR.ATOMIC_QUEUE, ethers.MaxUint256)).wait();
-        //         }
-        //     }
+           console.log("solverSigner.getAddress()")
+            if (autoApproveWant) {
+                const wantErc20 = new Contract(want, loadAbi("ERC20"), solverSigner);
+                const allowance = await wantErc20.allowance(solver, ADDR.ATOMIC_QUEUE);
+                if (allowance < offerAmount) {
+                    await (await wantErc20.approve(ADDR.ATOMIC_QUEUE, ethers.MaxUint256)).wait();
+                }
+            }
 
             this.atomicQueue.connect(solverSigner);
             await (await this.atomicQueue.solve(offer, want, users, runData, solver)).wait();

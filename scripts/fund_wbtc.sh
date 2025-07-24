@@ -4,7 +4,7 @@ set -euo pipefail
 RPC_URL="http://127.0.0.1:8545"
 WBTC=0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599
 WHALE=0xf335788b2251dEc93332310d96d15500cdC4C34b   # holds wBTC
-AMOUNT=20000000                                   # 0.2 wBTC (8‑dec)
+AMOUNT=20000000                                    # 0.2 wBTC (8‑dec)
 
 ACCOUNTS=(
   0xf39fd6e51aad88F6F4ce6aB8827279cffFb92266

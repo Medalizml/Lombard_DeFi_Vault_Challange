@@ -1,6 +1,6 @@
 import {setTimeout as delay} from "node:timers/promises";
 import {META_URL} from "../config";
-import {VaultMetadata} from "../types/metadata";
+import {VaultMetadata} from "../types/Metadata";
 
 
 const MAX_RETRIES = 3;

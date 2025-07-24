@@ -2,16 +2,16 @@ import { ethers} from "ethers";
 import {MetadataService} from "./services/MetadataService";
 import {VaultService} from "./services/VaultService";
 import {ADDR, RPC_URL} from "./config";
-import {asAddress} from "./types/common";
+import {asAddress} from "./types/Common";
 
 async function run() {
     const provider = new ethers.JsonRpcProvider(RPC_URL);
-    const metaSvc = new MetadataService();
-    const vaultSvc = new VaultService(provider);
+    const metadataService = new MetadataService();
+    const vaultService = new VaultService(provider);
 
     const [meta, tokenInfo] = await Promise.all([
-        metaSvc.fetch(),
-        vaultSvc.tokenMeta()
+        metadataService.fetch(),
+        vaultService.tokenMeta()
     ]);
 
     const {symbol, decimals, name} = tokenInfo;
@@ -22,23 +22,23 @@ async function run() {
 
 
     const human = (n: bigint) => ethers.formatUnits(n, decimals);
-    const wallet = (await vaultSvc["signer"].getAddress());
-    const before = await vaultSvc.vaultBalance();
+    const wallet = (await vaultService["signer"].getAddress());
+    const before = await vaultService.vaultBalance();
     console.log(`Wallet: ${wallet}`);
     console.log(`Balance before: ${human(before)}`);
 
     const raw = ethers.parseUnits("0.0001", decimals);
     console.log("Depositing...");
-    await vaultSvc.deposit(raw);
+    await vaultService.deposit(raw);
 
-    const after = await vaultSvc.vaultBalance();
+    const after = await vaultService.vaultBalance();
     console.log(`Balance after:  ${human(after)}`);
 
     console.log("Withdrawing...");
-    await vaultSvc.withdrawAll();
-    const signer = await vaultSvc.signer.getAddress()
+    await vaultService.withdrawAll();
+    const signer = await vaultService.signer.getAddress()
     console.log(`Signer: ${signer}`);
-    await vaultSvc.solveOnForkViaQueue(
+    await vaultService.solveOnForkViaQueue(
         {
             offer: ADDR.VAULT,          // shares token
             want:  ADDR.WBTC,           // asset you want back
@@ -49,7 +49,7 @@ async function run() {
         { autoApproveWant: true }
     );
 
-    const final = await vaultSvc.vaultBalance();
+    const final = await vaultService.vaultBalance();
     console.log(`Balance final: ${human(final)}`);
     console.log("✅ Complete!");
 

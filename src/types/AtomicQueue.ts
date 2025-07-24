@@ -1,4 +1,4 @@
-import {Address, Hex} from "./common";
+import {Address, Hex} from "./Common";
 
 export interface AtomicRequestWrite {
     deadline: bigint;     // uint64

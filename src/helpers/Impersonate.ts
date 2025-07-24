@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
-import {config} from "dotenv";
-import {RPC_URL} from "../config";
+import {DEFAULT_RPC_URL, RPC_URL} from "../config";
 
 const ONE_ETH_HEX = "0xDE0B6B3A7640000"; // 1 ETH in wei
 
@@ -15,8 +14,7 @@ export async function impersonate(
     addr: string,
     topUpWeiHex: string = ONE_ETH_HEX
 ): Promise<ethers.Signer> {
-    const net = await provider.getNetwork();
-    if (RPC_URL != "http://127.0.0.1:8545") {
+    if (RPC_URL != DEFAULT_RPC_URL) {
         throw new Error("Refusing to impersonate on mainnet. Point to your fork RPC.");
     }
 
@@ -34,7 +32,7 @@ export async function stopImpersonate(
     await provider.send("anvil_stopImpersonatingAccount", [addr]);
 }
 
-export async function withImpersonatedSigner<T>(
+export async function  withImpersonatedSigner<T>(
     provider: ethers.JsonRpcProvider,
     addr: string,
     fn: (signer: ethers.Signer) => Promise<T>,

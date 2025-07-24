@@ -1,9 +1,10 @@
 import "dotenv/config";
-import {Address} from "./types/common";
+import {Address} from "./types/Common";
 
 export const RPC_URL = process.env.RPC_URL!;
 export const PRIVATE_KEY = process.env.PRIVATE_KEY!;
 
+export const  DEFAULT_RPC_URL = "http://127.0.0.1:8545"
 // ───── Lombard contracts (main‑net) ─────
 
 type Addresses = {
