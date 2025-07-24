@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import {DEFAULT_RPC_URL, RPC_URL} from "../config";
+import {DEFAULT_RPC_URL,RPC_URL} from "../config";
 
 const ONE_ETH_HEX = "0xDE0B6B3A7640000"; // 1 ETH in wei
 
