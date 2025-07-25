@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RPC_URL=https://eth-mainnet.g.alchemy.com/v2/jcLLUyVkMldmG-nWkSjvlT5PqKxSN53D
+RPC_URL=https://eth-mainnet.g.alchemy.com/v2/{{api_key}}
 export RPC_URL
 
 LATEST=$(cast block-number --rpc-url $RPC_URL)

@@ -1,0 +1,3 @@
+[
+  "function redeemSolve(address queue,address offer,address want,address[] users,uint256 minimumAssetsOut,uint256 maxAssets,address teller) external"
+]

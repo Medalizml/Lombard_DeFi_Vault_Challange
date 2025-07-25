@@ -1,11 +1,11 @@
 import {ethers} from "ethers";
-import {ADDR} from "../src/config";
+import {ADDR, DEFAULT_RPC_URL} from "../src/config";
 
-const RPC_URL = process.env.RPC_URL ?? "http://127.0.0.1:8545";
+const RPC_URL = process.env.RPC_URL ?? DEFAULT_RPC_URL;
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-const TELLER = ADDR.ATOMIC_QUEUE;
-const BULK_WITHDRAW_EVENT = ethers.id("AtomicRequestFulfilled(address,address,address,uint256,uint256,uint256)"); // topic0
+const QUEUE = ADDR.ATOMIC_QUEUE;
+const ATOMIC_REQUEST_FULFILLED_TOPIC  = ethers.id("AtomicRequestFulfilled(address,address,address,uint256,uint256,uint256)");
 
 const MAX_WINDOW = 500;
 
@@ -53,14 +53,13 @@ export async function getLogsChunked(
 
     return logs;
 }
-
 async function findSolvers(depth = 10_000) {
     const latest = await provider.getBlockNumber();
     const from = Math.max(0, latest - depth);
 
     const logs = await getLogsChunked(provider, {
-        address: TELLER,
-        topics: [BULK_WITHDRAW_EVENT],
+        address: QUEUE,
+        topics: [ATOMIC_REQUEST_FULFILLED_TOPIC],
         fromBlock: from,
         toBlock: latest,
     });

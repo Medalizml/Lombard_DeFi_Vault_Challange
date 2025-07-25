@@ -1,58 +1,77 @@
-import { ethers} from "ethers";
-import {MetadataService} from "./services/MetadataService";
+import {ethers, JsonRpcProvider, NonceManager, Wallet} from "ethers";
+import {ADDR, PRIVATE_KEY, RPC_URL} from "./config";
 import {VaultService} from "./services/VaultService";
-import {ADDR, RPC_URL} from "./config";
-import {asAddress} from "./types/Common";
+import {QueueService} from "./services/QueueService";
+import {SolverService} from "./services/SolverService";
+import {AtomicRequestWrite, toUint64, toUint88, toUint96} from "./types/AtomicQueue";
+import {Address} from "./types/Common";
+import {MetadataService} from "./services/MetadataService";
 
-async function run() {
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
+(async () => {
+    const provider = new JsonRpcProvider(RPC_URL);
+    const signer = new NonceManager(new Wallet(PRIVATE_KEY, provider));
+
+    const vault = new VaultService(provider, signer, ADDR);
+    const queue = new QueueService(signer, ADDR.ATOMIC_QUEUE);
+    const solver = new SolverService(provider, signer, {VAULT: ADDR.VAULT, ATOMIC_QUEUE: ADDR.ATOMIC_QUEUE});
     const metadataService = new MetadataService();
-    const vaultService = new VaultService(provider);
 
-    const [meta, tokenInfo] = await Promise.all([
-        metadataService.fetch(),
-        vaultService.tokenMeta()
-    ]);
+    const want: Address = ADDR.ERC20;
+
+    const metadata = await metadataService.fetch();
+
+    const tokenInfo = await vault.tokenMeta();
+    const user = (await signer.getAddress()) as Address;
+
 
     const {symbol, decimals, name} = tokenInfo;
     console.log(`Vault: ${name}`);
-    console.log(`APY:  ${MetadataService.latestApy(meta)}%`);
-    console.log(`TVL:  $${Number(meta.tvl).toLocaleString(undefined, {maximumFractionDigits: 2})}`);
+    console.log(`APY:  ${MetadataService.latestApy(metadata)}%`);
+    console.log(`TVL:  $${Number(metadata.tvl).toLocaleString(undefined, {maximumFractionDigits: 2})}`);
     console.log(`Token: ${symbol} (${decimals} decimals)\n`);
 
-
     const human = (n: bigint) => ethers.formatUnits(n, decimals);
-    const wallet = (await vaultService["signer"].getAddress());
-    const before = await vaultService.vaultBalance();
+    const wallet = (await vault["signer"].getAddress());
+    const before = await vault.sharesOf(user);
     console.log(`Wallet: ${wallet}`);
     console.log(`Balance before: ${human(before)}`);
 
-    const raw = ethers.parseUnits("0.0001", decimals);
+    // deposit demo
     console.log("Depositing...");
-    await vaultService.deposit(raw);
-
-    const after = await vaultService.vaultBalance();
+    await vault.depositWBTC(10_000n); // e.g. 0.0001 wBTC
+    const after = await vault.sharesOf();
     console.log(`Balance after:  ${human(after)}`);
 
+    // enqueue withdraw
     console.log("Withdrawing...");
-    await vaultService.withdrawAll();
-    const signer = await vaultService.signer.getAddress()
-    console.log(`Signer: ${signer}`);
-    await vaultService.solveOnForkViaQueue(
-        {
-            offer: ADDR.VAULT,          // shares token
-            want:  ADDR.WBTC,           // asset you want back
-            users: [asAddress(signer)],
-            runData: "0x",              // nothing special for fork tests
-            solver: ADDR.SOLVER,
-        },
-        { autoApproveWant: true }
-    );
+    const now = BigInt((await provider.getBlock("latest"))!.timestamp);
+    const left = await vault.shareUnlockRemaining(user);
 
-    const final = await vaultService.vaultBalance();
+    const accountant = new ethers.Contract(
+        ADDR.ACCOUNTANT,
+        ["function getRateInQuoteSafe(address) view returns (uint256)"],
+        signer
+    );
+    const rate = BigInt(await accountant.getRateInQuoteSafe(want));
+
+    const shares = await vault.sharesOf(user);
+    await vault.approveSharesToQueue(shares);
+
+    const req: AtomicRequestWrite = {
+        deadline: toUint64(now + left + 86_400n),
+        atomicPrice: toUint88(rate),
+        offerAmount: toUint96(shares),
+    };
+    await (await queue.updateRequest(ADDR.VAULT, want, req)).wait();
+
+
+    await solver.redeemSolveOnFork({
+        callerEOA: ADDR.CALLER,
+        solverContract: ADDR.SOLVER,
+        want,
+        teller: ADDR.TELLER,
+    });
+    const final = await vault.sharesOf();
     console.log(`Balance final: ${human(final)}`);
     console.log("✅ Complete!");
-
-}
-
-run().catch(console.error);
+})();

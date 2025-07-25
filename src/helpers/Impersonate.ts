@@ -1,5 +1,5 @@
-import { ethers } from "ethers";
-import {DEFAULT_RPC_URL,RPC_URL} from "../config";
+import {ethers} from "ethers";
+import {assertFork} from "./Fork";
 
 const ONE_ETH_HEX = "0xDE0B6B3A7640000"; // 1 ETH in wei
 
@@ -14,9 +14,7 @@ export async function impersonate(
     addr: string,
     topUpWeiHex: string = ONE_ETH_HEX
 ): Promise<ethers.Signer> {
-    if (RPC_URL != DEFAULT_RPC_URL) {
-        throw new Error("Refusing to impersonate on mainnet. Point to your fork RPC.");
-    }
+    await assertFork();
 
     await provider.send("anvil_impersonateAccount", [addr]);
     if (topUpWeiHex !== "0x0") {
@@ -32,7 +30,7 @@ export async function stopImpersonate(
     await provider.send("anvil_stopImpersonatingAccount", [addr]);
 }
 
-export async function  withImpersonatedSigner<T>(
+export async function withImpersonatedSigner<T>(
     provider: ethers.JsonRpcProvider,
     addr: string,
     fn: (signer: ethers.Signer) => Promise<T>,

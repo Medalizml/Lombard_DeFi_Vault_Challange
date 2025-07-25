@@ -2,5 +2,6 @@
   "function isAtomicRequestValid(address offer,address user,(uint64 deadline,uint88 atomicPrice,uint96 offerAmount,bool inSolve) userRequest) view returns (bool)",
   "function updateAtomicRequest(address offer,address want,(uint64 deadline,uint88 atomicPrice,uint96 offerAmount,bool inSolve) userRequest) external",
   "function solve(address offer, address want, address[] users, bytes runData, address solver) external",
-  "function userAtomicRequest(address user,address offer,address want) view returns (uint64 deadline,uint88 atomicPrice,uint96 offerAmount,bool inSolve)"
+  "function userAtomicRequest(address user,address offer,address want) view returns (uint64 deadline,uint88 atomicPrice,uint96 offerAmount,bool inSolve)",
+  "function isPaused() public returns (bool)"
 ]
